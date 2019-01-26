@@ -1,6 +1,7 @@
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
-import java.io.File;
+import java.util.Date;
+import java.util.StringTokenizer;
 
 public class Server implements Runnable{
 
@@ -18,7 +19,31 @@ public class Server implements Runnable{
 	}
 
 	public void run() {
+		BufferedReader input = null;
+		PrintWriter output = null;
+		BufferedOutputStream dataOutput = null;
+		String fileRequest = null;
 
+		try {
+			input = new BufferedReader(new InputStreamReader(client.getInputStream()));
+			output = new PrintWriter(client.getOutputStream());
+			dataOutput = new BufferedOutputStream(client.getOutputStream());
+
+			String inputString = input.readLine();
+			StringTokenizer parse = new StringTokenizer(inputString);
+			String method = parse.nextToken().toUpperCase();
+			fileRequest = parse.nextToken().toLowerCase();
+
+			if (!method.equals("get") && !method.equals("head")) {
+				if (verbose) {
+					System.out.println("501 not implememted: " + method + " method");
+				}
+			}
+
+
+		} catch (IOException ioe) {
+			System.err.println("server error: " + ioe);
+		}
 	}
 
 	public static void main(String[] args) {
@@ -29,6 +54,13 @@ public class Server implements Runnable{
 
 			while (true) {
 				Server server = new Server(serverConnect.accept());
+
+				if (verbose) {
+					System.out.println("connection opened --" + new Date() + "--");
+				}
+
+				Thread thread = new Thread(server);
+				thread.start();
 			}
 
 		} catch (IOException e) {
