@@ -12,6 +12,7 @@ public class Server {
 
 	public Server(int port1) {
 		port = port1;
+		String ola = "ola";
 		stop = false;
 
 		try {
