@@ -10,18 +10,11 @@ public class Server implements Runnable{
 	private static File webRoot = new File(".");
 	private static String defaultFile = "index.html";
 	private static String fileNotFound = "404";
-	private static String methodNotSupported;
+	private static String methodNotSupported = "not_supported.html";
 
 
-	public Server(Socket c, int p) {
+	public Server(Socket c) {
 		client = c;
-		port = p;
-		verbose = true;
-		webRoot = new File(".");
-		defaultFile = "index.html";
-		fileNotFound = "404.html";
-		methodNotSupported = "not_supported.html";
-
 	}
 
 	public void run() {
@@ -35,7 +28,7 @@ public class Server implements Runnable{
 			System.out.println("server started\nwaiting for connection on port: " + port + "...");
 
 			while (true) {
-				Server server = new Server(serverConnect.accept(),8080);
+				Server server = new Server(serverConnect.accept());
 			}
 
 		} catch (IOException e) {
