@@ -10,7 +10,7 @@ public class Server implements Runnable{
 	private static boolean verbose = true;
 	private static File webRoot = new File(".");
 	private static String defaultFile = "index.html";
-	private static String fileNotFound = "404";
+	private static String fileNotFound = "404.html";
 	private static String methodNotSupported = "not_supported.html";
 
 
@@ -38,12 +38,47 @@ public class Server implements Runnable{
 				if (verbose) {
 					System.out.println("501 not implememted: " + method + " method");
 				}
+
+				File file = new File(webRoot, methodNotSupported);
+				int fileLength = (int) file.length();
+				String contentMimeType = "text/htmL";
+
+				byte[] fileData = readFileData(file, fileLength);
+
+				output.println("http/1.1 501 not implemented");
+				output.println("server: java http server from laura-jmr");
+				output.println("date: " + new Date());
+				output.println("content-type: " + contentMimeType);
+				output.println("content-length: " + fileLength);
+				output.println();
+				output.flush();
+
+				dataOutput.write(fileData, 0, fileLength);
+				dataOutput.flush();
+
+				return;
 			}
 
 
 		} catch (IOException ioe) {
 			System.err.println("server error: " + ioe);
 		}
+	}
+
+	private byte[] readFileData(File file, int fileLength) throws IOException {
+		FileInputStream fileIn = null;
+		byte[] fileData = new byte[fileLength];
+
+		try {
+			fileIn = new FileInputStream(file);
+			fileIn.read(fileData);
+		} finally {
+			if (fileIn != null) {
+				fileIn.close();
+			}
+		}
+
+		return fileData;
 	}
 
 	public static void main(String[] args) {
