@@ -1,55 +1,45 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
+import java.io.File;
 
-public class Server {
+public class Server implements Runnable{
 
-	private ServerSocket serverSocket;
-	private Socket client;
-	private int port;
-	private static boolean stop;
+	private static Socket client;
+	private static int port = 8080;
+	private static boolean verbose = true;
+	private static File webRoot = new File(".");
+	private static String defaultFile = "index.html";
+	private static String fileNotFound = "404";
+	private static String methodNotSupported;
 
-	public Server(int port1) {
-		port = port1;
-		String ola = "ola";
-		stop = false;
 
-		try {
-			serverSocket = new ServerSocket(port);
+	public Server(Socket c, int p) {
+		client = c;
+		port = p;
+		verbose = true;
+		webRoot = new File(".");
+		defaultFile = "index.html";
+		fileNotFound = "404.html";
+		methodNotSupported = "not_supported.html";
 
-			serverSocket.setSoTimeout(1000000);
-		} catch (SocketException e) {} catch (IOException e) {}
 	}
 
-	public void activate() {
+	public void run() {
 
-		System.out.println("waitint for client at " + port);
-
-		try {
-			client = serverSocket.accept();
-			//DataInputStream input = new DataInputStream(client.getInputStream());
-			DataOutputStream output = new DataOutputStream(client.getOutputStream());
-
-			//System.out.println(client.getRemoteSocketAddress() + ": " + input.readUTF());
-			System.out.println(client.getRemoteSocketAddress());
-			output.writeUTF("ola");
-
-			System.out.println("handled");
-
-			client.close();
-		} catch (Exception e) {
-			System.out.println("stopped");
-			stop = true;
-			e.printStackTrace();
-		}
 	}
 
 	public static void main(String[] args) {
-		Server server = new Server(8080);
 
-		while (stop == false) {
-			server.activate();
+		try {
+			ServerSocket serverConnect = new ServerSocket(port);
+			System.out.println("server started\nwaiting for connection on port: " + port + "...");
+
+			while (true) {
+				Server server = new Server(serverConnect.accept(),8080);
+			}
+
+		} catch (IOException e) {
+			System.err.println("server connection error: " + e.getMessage());
 		}
 	}
 }
