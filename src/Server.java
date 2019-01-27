@@ -1,179 +1,36 @@
-import java.io.*;
 import java.net.*;
-import java.util.Date;
-import java.util.StringTokenizer;
+import java.io.*;
 
-public class Server implements Runnable{
+public class Server {
 
-	private static Socket client;
-	private static int port = 8080;
-	private static boolean verbose = true;
-	private static File webRoot = new File(".");
-	private static String defaultFile = "index.html";
-	private static String fileNotFound = "404.html";
-	private static String methodNotSupported = "not_supported.html";
+	public static void main (String[] args) throws IOException {
+		ServerSocket server = new ServerSocket(9090);
 
+		System.out.println("server started\nwaiting for connection on port: " + 9090 + "...");
 
-	public Server(Socket c) {
-		client = c;
-	}
-
-	public static void main(String[] args) {
-
-		try {
-			ServerSocket serverConnect = new ServerSocket(port);
-			System.out.println("server started\nwaiting for connection on port: " + port + "...");
-
-			while (true) {
-				Server server = new Server(serverConnect.accept());
-
-				if (verbose) {
-					System.out.println("connection opened --" + new Date() + "--");
-				}
-
-				Thread thread = new Thread(server);
-				thread.start();
-			}
-
-		} catch (IOException e) {
-			System.err.println("server connection error: " + e.getMessage());
+		while (true) {
+			sendMessageToClient("ola", server);
+			readMessageFromClient(server);
 		}
 	}
 
-	public void run() {
-		BufferedReader input = null;
-		PrintWriter output = null;
-		BufferedOutputStream dataOutput = null;
-		String fileRequest = null;
-
-		try {
-			input = new BufferedReader(new InputStreamReader(client.getInputStream()));
-			output = new PrintWriter(client.getOutputStream());
-			dataOutput = new BufferedOutputStream(client.getOutputStream());
-
-			String inputString = input.readLine();
-			StringTokenizer parse = new StringTokenizer(inputString);
-			String method = parse.nextToken().toUpperCase();
-			fileRequest = parse.nextToken().toLowerCase();
-
-			if (!method.equals("get") && !method.equals("head")) {
-				if (verbose) {
-					System.out.println("501 not implememted: " + method + " method");
-				}
-
-				File file = new File(webRoot, methodNotSupported);
-				int fileLength = (int) file.length();
-				String contentMimeType = "text/html";
-
-				byte[] fileData = readFileData(file, fileLength);
-
-				output.println("http/1.1 501 not implemented");
-				output.println("server: java http server from laura-jmr");
-				output.println("date: " + new Date());
-				output.println("content-type: " + contentMimeType);
-				output.println("content-length: " + fileLength);
-				output.println();
-				output.flush();
-
-				dataOutput.write(fileData, 0, fileLength);
-				dataOutput.flush();
-			}
-			else {
-				if (fileRequest.endsWith("/")) {
-					fileRequest += defaultFile;
-				}
-
-				File file = new File(webRoot, fileRequest);
-				int fileLength = (int) file.length();
-				String content = getContentType(fileRequest);
-
-				if (method.equals("get")) {
-					byte[] fileData = readFileData(file, fileLength);
-
-					output.println("http/1.1 200 ok");
-					output.println("server: java http server from laura-jmr");
-					output.println("date: " + new Date());
-					output.println("content-type: " + content);
-					output.println("content-length: " + fileLength);
-					output.println();
-					output.flush();
-
-					dataOutput.write(fileData, 0, fileLength);
-					dataOutput.flush();
-				}
-
-				if (verbose) {
-					System.out.println("File " + fileRequest + " of type " + content + " returned...");
-				}
-			}
-		} catch (FileNotFoundException fnfe) {
-			try {
-				fileNotFound(output, dataOutput, fileRequest);
-			} catch (IOException ioe) {
-				System.err.println("error with file, not found exception: " + ioe);
-			}
-
-		} catch (IOException ioe) {
-			System.err.println("server error: " + ioe);
-		 } finally {
-			try {
-				input.close();
-				output.close();
-				dataOutput.close();
-				client.close();
-			} catch (Exception e) {
-				System.err.println("error closing stream: " + e.getMessage());
-			}
-
-			if (verbose) {
-				System.out.println("connection closed...");
-			}
+	private static void sendMessageToClient (String message, ServerSocket server) throws IOException {
+		try (Socket client = server.accept()){
+			String httpResponse = "HTTP/1.1 200 OK\r\n\r\n" + message;
+			client.getOutputStream().write(httpResponse.getBytes("UTF-8"));
 		}
-
 	}
 
-	private byte[] readFileData(File file, int fileLength) throws IOException {
-		FileInputStream fileIn = null;
-		byte[] fileData = new byte[fileLength];
+	private static void readMessageFromClient (ServerSocket server) throws IOException {
+		Socket client = server.accept();
+		InputStreamReader input = new InputStreamReader(client.getInputStream());
+		BufferedReader reader = new BufferedReader(input);
+		String line = reader.readLine();
 
-		try {
-			fileIn = new FileInputStream(file);
-			fileIn.read(fileData);
-		} finally {
-			if (fileIn != null) {
-				fileIn.close();
-			}
-		}
+		while (!line.isEmpty()) {
+			System.out.println(line);
 
-		return fileData;
-	}
-
-	private String getContentType(String fileRequest) {
-		if (fileRequest.endsWith(".htm") || fileRequest.endsWith(".html"))
-			return "text/html";
-		else
-			return "text/plain";
-	}
-
-	private void fileNotFound(PrintWriter out, OutputStream dataOut, String fileRequested) throws IOException {
-		File file = new File(webRoot, fileNotFound);
-		int fileLength = (int) file.length();
-		String content = "text/html";
-		byte[] fileData = readFileData(file, fileLength);
-
-		out.println("http/1.1 404 File Not Found");
-		out.println("server: java http server from laura-jmr");
-		out.println("date: " + new Date());
-		out.println("content-type: " + content);
-		out.println("content-length: " + fileLength);
-		out.println();
-		out.flush();
-
-		dataOut.write(fileData, 0, fileLength);
-		dataOut.flush();
-
-		if (verbose) {
-			System.out.println("file " + fileRequested + " not found");
+			line = reader.readLine();
 		}
 	}
 }
